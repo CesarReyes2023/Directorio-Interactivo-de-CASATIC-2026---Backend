@@ -47,9 +47,12 @@ services:
       Jwt__Audience: "CasaticDirectorioClients"
     ports:
       - "5000:5000"
+    volumes:
+      - uploads:/app/wwwroot/logos
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+  uploads:

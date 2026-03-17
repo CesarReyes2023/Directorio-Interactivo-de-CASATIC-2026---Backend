@@ -111,7 +111,10 @@ public class SociosController : ControllerBase
         if (dto.LogoUrl != null) socio.LogoUrl = dto.LogoUrl;
         if (dto.MarcasRepresenta != null) socio.MarcasRepresenta = dto.MarcasRepresenta;
         if (dto.EmailContacto != null) socio.EmailContacto = dto.EmailContacto;
+<<<<<<< HEAD
         if (dto.MapaUrl != null) socio.MapaUrl = dto.MapaUrl;
+=======
+>>>>>>> a5205bf9dab33cdc0c8ca21fcbbabf55a6faf09a
         if (dto.EstadoFinanciero != null)
             socio.EstadoFinanciero = Enum.Parse<EstadoFinanciero>(dto.EstadoFinanciero);
         if (dto.Habilitado.HasValue) socio.Habilitado = dto.Habilitado.Value;

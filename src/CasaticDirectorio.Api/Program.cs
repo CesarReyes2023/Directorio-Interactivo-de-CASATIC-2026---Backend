@@ -186,11 +186,14 @@ using (var scope = app.Services.CreateScope())
         ADD COLUMN IF NOT EXISTS ""EmailContacto"" text NOT NULL DEFAULT '';
     ");
 
+<<<<<<< HEAD
     await db.Database.ExecuteSqlRawAsync(@"
         ALTER TABLE IF EXISTS socios
         ADD COLUMN IF NOT EXISTS ""MapaUrl"" text NOT NULL DEFAULT '';
     ");
 
+=======
+>>>>>>> a5205bf9dab33cdc0c8ca21fcbbabf55a6faf09a
     // ── Limpieza de datos demo (se ejecuta una sola vez) ─────
     // Detecta los slugs de ejemplo del seeder anterior y los borra.
     // Una vez eliminados, este bloque queda inactivo para siempre.
