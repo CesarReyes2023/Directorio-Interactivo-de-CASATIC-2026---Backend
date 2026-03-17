@@ -73,6 +73,10 @@ public class AuthController : ControllerBase
         var usuario = await _usuarios.GetByIdAsync(Guid.Parse(userId));
         if (usuario == null) return NotFound();
 
+        // Validación de seguridad de contraseña
+        if (!System.Text.RegularExpressions.Regex.IsMatch(req.NuevaPassword, @"^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$"))
+            return BadRequest(new { message = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial." });
+
         usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NuevaPassword);
         usuario.PrimerLogin = false;
         await _usuarios.UpdateAsync(usuario);
