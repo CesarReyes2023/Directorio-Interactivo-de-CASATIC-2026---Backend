@@ -44,14 +44,7 @@ public class Socio
     public string EmailContacto { get; set; } = string.Empty;
 
     /// <summary>
-<<<<<<< HEAD
-    /// URL embed de Google Maps para mostrar ubicación en el micro-sitio.
-    /// </summary>
-    public string MapaUrl { get; set; } = string.Empty;
 
-    /// <summary>
-=======
->>>>>>> a5205bf9dab33cdc0c8ca21fcbbabf55a6faf09a
     /// Marcas que representa el socio (máx. 50 palabras).
     /// </summary>
     public string MarcasRepresenta { get; set; } = string.Empty;
