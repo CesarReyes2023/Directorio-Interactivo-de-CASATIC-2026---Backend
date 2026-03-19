@@ -69,12 +69,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
 
-// ── Controllers ──────────────────────────────────────────────
+// ── Forzar UTF-8 en toda la salida ───────────────────────────
+Console.OutputEncoding = Encoding.UTF8;
+
+// ── Controllers ──────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         opts.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        opts.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 
 // ── Swagger / OpenAPI ────────────────────────────────────────

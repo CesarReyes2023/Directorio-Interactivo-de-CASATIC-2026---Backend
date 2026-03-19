@@ -20,5 +20,8 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:5000
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 EXPOSE 5000
 ENTRYPOINT ["dotnet", "CasaticDirectorio.Api.dll"]
