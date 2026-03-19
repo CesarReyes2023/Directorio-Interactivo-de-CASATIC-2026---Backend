@@ -15,8 +15,5 @@ public class SocioUpdateDto
     public string? EstadoFinanciero { get; set; }
     public bool? Habilitado { get; set; }
     public string? EmailContacto { get; set; }
-<<<<<<< HEAD
     public string? MapaUrl { get; set; }
-=======
->>>>>>> a5205bf9dab33cdc0c8ca21fcbbabf55a6faf09a
 }

@@ -22,8 +22,5 @@ public class SocioCreateDto
     [EmailAddress]
     [MaxLength(200)]
     public string EmailContacto { get; set; } = string.Empty;
-<<<<<<< HEAD
     public string MapaUrl { get; set; } = string.Empty;
-=======
->>>>>>> a5205bf9dab33cdc0c8ca21fcbbabf55a6faf09a
 }
