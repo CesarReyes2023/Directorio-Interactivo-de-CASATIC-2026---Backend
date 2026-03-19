@@ -1,6 +1,6 @@
 # ══════════════════════════════════════════════════════════════
-# docker-compose.yml — Backend CASATIC Directorio 2026
-# Levanta: PostgreSQL + API .NET + pgAdmin
+# docker-compose.yml — Directorio Interactivo CASATIC 2026
+# Levanta: PostgreSQL + API .NET + Frontend + pgAdmin
 # ══════════════════════════════════════════════════════════════
 services:
   # ── PostgreSQL ──────────────────────────────────────────
@@ -56,6 +56,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  # ── Frontend React (Nginx) ──────────────────────────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: casatic-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
 
 volumes:
   pgdata:
