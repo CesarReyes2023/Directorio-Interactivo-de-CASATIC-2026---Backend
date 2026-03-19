@@ -1,6 +1,9 @@
 # ══════════════════════════════════════════════════════════════
 # docker-compose.yml — Directorio Interactivo CASATIC 2026
 # Levanta: PostgreSQL + API .NET + Frontend + pgAdmin
+#
+# Los secretos se leen del archivo .env (no se sube a Git).
+# Copiar .env.example → .env y rellenar los valores.
 # ══════════════════════════════════════════════════════════════
 services:
   # ── PostgreSQL ──────────────────────────────────────────
@@ -8,9 +11,9 @@ services:
     image: postgres:16-alpine
     container_name: casatic-db
     environment:
-      POSTGRES_USER: casatic
-      POSTGRES_PASSWORD: casatic2026
-      POSTGRES_DB: casatic_directorio
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
@@ -20,7 +23,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U casatic -d casatic_directorio"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -30,8 +33,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@casatic.org
-      PGADMIN_DEFAULT_PASSWORD: Admin123!
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "5050:80"
     depends_on:
@@ -44,11 +47,11 @@ services:
       dockerfile: Dockerfile
     container_name: casatic-api
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=casatic_directorio;Username=casatic;Password=casatic2026;Client Encoding=UTF8"
-      Jwt__Key: "CASATIC-2026-Docker-SecretKey-Cambiame-En-Produccion-!@#"
-      Jwt__Issuer: "CasaticDirectorio"
-      Jwt__Audience: "CasaticDirectorioClients"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__DefaultConnection: ${CONNECTION_STRING}
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
     ports:
       - "5000:5000"
     volumes:
