@@ -11,6 +11,10 @@ services:
       POSTGRES_USER: casatic
       POSTGRES_PASSWORD: casatic2026
       POSTGRES_DB: casatic_directorio
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    command: ["postgres", "-c", "client_encoding=UTF8"]
     ports:
       - "5432:5432"
     volumes:
@@ -41,7 +45,7 @@ services:
     container_name: casatic-api
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=casatic_directorio;Username=casatic;Password=casatic2026"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=casatic_directorio;Username=casatic;Password=casatic2026;Client Encoding=UTF8"
       Jwt__Key: "CASATIC-2026-Docker-SecretKey-Cambiame-En-Produccion-!@#"
       Jwt__Issuer: "CasaticDirectorio"
       Jwt__Audience: "CasaticDirectorioClients"
