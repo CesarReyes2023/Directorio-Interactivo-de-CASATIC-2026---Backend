@@ -2,6 +2,9 @@
   GUÍA: RESTAURAR BASE DE DATOS - CASATIC DIRECTORIO
 ======================================================
 
+  Última actualización: Julio 2025
+  Empresas en el backup: 20
+
 ANTES DE EMPEZAR:
   - Tener Docker Desktop instalado y corriendo
   - Haber clonado el repositorio
@@ -10,7 +13,7 @@ ANTES DE EMPEZAR:
 PASO 1 — BAJAR LOS CAMBIOS DEL REPO
 ------------------------------------------------------
 
-  git pull origin main
+  git pull origin desarrollo
 
 
 ------------------------------------------------------
@@ -80,7 +83,7 @@ CÓMO ACTUALIZAR EL BACKUP (solo el responsable)
   2) Commitear y pushear:
      git add backup.sql
      git commit -m "chore: actualizar backup BD - [fecha]"
-     git push origin main
+     git push origin desarrollo
 
   Los demás compañeros repiten desde el PASO 1.
 
