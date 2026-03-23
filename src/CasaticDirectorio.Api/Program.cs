@@ -23,6 +23,7 @@ using CasaticDirectorio.Api.Middleware;
 // ASP.NET model binding parsea query params como Kind=Unspecified;
 // esta opciÃ³n evita el error Â« Cannot write DateTime with Kind=Unspecified Â».
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -231,6 +232,12 @@ using (var scope = app.Services.CreateScope())
     }
 
     await DataSeeder.SeedAsync(db);
+
+    var normalizedSocios = await SocioTextNormalization.NormalizeAsync(db);
+    if (normalizedSocios > 0)
+    {
+        Log.Information("Se normalizaron {TotalSocios} socios con texto corrupto por codificacion.", normalizedSocios);
+    }
 }
 
 // â”€â”€ Archivos estÃ¡ticos (logos subidos) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
