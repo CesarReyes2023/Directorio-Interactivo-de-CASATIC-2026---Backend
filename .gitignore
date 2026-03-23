@@ -1,15 +1,57 @@
-# Build outputs
+# ══════════════════════════════════════════════════════════════
+# .gitignore — Backend CASATIC Directorio
+# ══════════════════════════════════════════════════════════════
+
+# ── Secretos y variables de entorno ──────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+
+# ── Base de datos / Backups ──────────────────────────────
+*.sql
+!schema.sql
+
+# ── .NET Build ───────────────────────────────────────────
 **/bin/
 **/obj/
+*.user
+*.suo
+*.cache
+*.db
+*.db-shm
+*.db-wal
+project.lock.json
 
-# Logs
+# ── Logs ─────────────────────────────────────────────────
 src/CasaticDirectorio.Api/logs/
 *.log
 
-# IDE
+# ── NuGet ────────────────────────────────────────────────
+*.nupkg
+.nuget/
+
+# ── IDE ──────────────────────────────────────────────────
 .vs/
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# OS
+# ── OS ───────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ── Node (si aplica) ────────────────────────────────────
+node_modules/
+package-lock.json
+
+# ── Docker override local ───────────────────────────────
+docker-compose.override.yml
+
+# ── Uploads locales ─────────────────────────────────────
+src/CasaticDirectorio.Api/wwwroot/logos/*
+!src/CasaticDirectorio.Api/wwwroot/logos/.gitkeep

@@ -44,6 +44,12 @@ public class Socio
     public string EmailContacto { get; set; } = string.Empty;
 
     /// <summary>
+    /// URL de Google Maps u otro servicio de mapas.
+    /// </summary>
+    public string MapaUrl { get; set; } = string.Empty;
+
+    /// <summary>
+
     /// Marcas que representa el socio (máx. 50 palabras).
     /// </summary>
     public string MarcasRepresenta { get; set; } = string.Empty;

@@ -17,6 +17,7 @@ public class SocioDto
     public string LogoUrl { get; set; } = string.Empty;
     public string MarcasRepresenta { get; set; } = string.Empty;
     public string EmailContacto { get; set; } = string.Empty;
+    public string MapaUrl { get; set; } = string.Empty;
     public string EstadoFinanciero { get; set; } = string.Empty;
     public bool Habilitado { get; set; }
     public DateTime CreatedAt { get; set; }

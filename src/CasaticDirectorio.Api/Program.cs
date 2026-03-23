@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Threading.RateLimiting;
 using CasaticDirectorio.Api.Mapping;
 using CasaticDirectorio.Api.Services;
@@ -15,42 +15,43 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using CasaticDirectorio.Api.Middleware;
 
-// ══════════════════════════════════════════════════════════════
-// Program.cs — Directorio Interactivo CASATIC 2026
-// ══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Program.cs â€” Directorio Interactivo CASATIC 2026
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// Permitir DateTime sin Kind explícito en consultas EF Core / Npgsql.
+// Permitir DateTime sin Kind explÃ­cito en consultas EF Core / Npgsql.
 // ASP.NET model binding parsea query params como Kind=Unspecified;
-// esta opción evita el error « Cannot write DateTime with Kind=Unspecified ».
+// esta opciÃ³n evita el error Â« Cannot write DateTime with Kind=Unspecified Â».
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Serilog ──────────────────────────────────────────────────
+// â”€â”€ Serilog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-// ── PostgreSQL + EF Core ─────────────────────────────────────
+// â”€â”€ PostgreSQL + EF Core â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ── Repositorios (DI) ────────────────────────────────────────
+// â”€â”€ Repositorios (DI) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddScoped<ISocioRepository, SocioRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<ILogActividadRepository, LogActividadRepository>();
 builder.Services.AddScoped<IFormularioContactoRepository, FormularioContactoRepository>();
 
-// ── Servicios ────────────────────────────────────────────────
+// â”€â”€ Servicios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<ILogService, LogService>();
 
-// ── AutoMapper ───────────────────────────────────────────────
+// â”€â”€ AutoMapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-// ── JWT Authentication ───────────────────────────────────────
+// â”€â”€ JWT Authentication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -69,15 +70,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
 
-// ── Controllers ──────────────────────────────────────────────
+// â”€â”€ Forzar UTF-8 en toda la salida â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+Console.OutputEncoding = Encoding.UTF8;
+
+// â”€â”€ Controllers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         opts.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        opts.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 
-// ── Swagger / OpenAPI ────────────────────────────────────────
+// â”€â”€ Swagger / OpenAPI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -112,7 +117,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ── CORS ─────────────────────────────────────────────────────
+// â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -126,10 +131,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ── Rate Limiting (protección contra abuso) ──────────────────
+// â”€â”€ Rate Limiting (protecciÃ³n contra abuso) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 builder.Services.AddRateLimiter(rl =>
 {
-    // Formularios de contacto: máx 5 por IP por minuto
+    // Formularios de contacto: mÃ¡x 5 por IP por minuto
     rl.AddFixedWindowLimiter("contacto", options =>
     {
         options.Window = TimeSpan.FromMinutes(1);
@@ -138,7 +143,7 @@ builder.Services.AddRateLimiter(rl =>
         options.QueueLimit = 0;
     });
 
-    // Login: máx 10 intentos por IP por minuto (anti-brute-force)
+    // Login: mÃ¡x 10 intentos por IP por minuto (anti-brute-force)
     rl.AddFixedWindowLimiter("auth", options =>
     {
         options.Window = TimeSpan.FromMinutes(1);
@@ -152,9 +157,9 @@ builder.Services.AddRateLimiter(rl =>
 
 var app = builder.Build();
 
-// ── Migraciones automáticas + Seed ───────────────────────────
+// â”€â”€ Migraciones automÃ¡ticas + Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // En desarrollo: EnsureCreated crea las tablas si no existen.
-// En producción: usar MigrateAsync con migraciones generadas.
+// En producciÃ³n: usar MigrateAsync con migraciones generadas.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -177,7 +182,7 @@ using (var scope = app.Services.CreateScope())
     ");
 
     await db.Database.ExecuteSqlRawAsync(@"
-        ALTER TABLE IF EXISTS ""FormulariosContacto""
+        ALTER TABLE IF EXISTS formularios_contacto
         ADD COLUMN IF NOT EXISTS ""Leido"" boolean NOT NULL DEFAULT false;
     ");
 
@@ -186,7 +191,12 @@ using (var scope = app.Services.CreateScope())
         ADD COLUMN IF NOT EXISTS ""EmailContacto"" text NOT NULL DEFAULT '';
     ");
 
-    // ── Limpieza de datos demo (se ejecuta una sola vez) ─────
+    await db.Database.ExecuteSqlRawAsync(@"
+        ALTER TABLE IF EXISTS socios
+        ADD COLUMN IF NOT EXISTS ""MapaUrl"" text NOT NULL DEFAULT '';
+    ");
+
+    // â”€â”€ Limpieza de datos demo (se ejecuta una sola vez) â”€â”€â”€â”€â”€
     // Detecta los slugs de ejemplo del seeder anterior y los borra.
     // Una vez eliminados, este bloque queda inactivo para siempre.
     var slugsDemo = new[]
@@ -218,13 +228,19 @@ using (var scope = app.Services.CreateScope())
         db.Socios.RemoveRange(sociosDemo);
 
         await db.SaveChangesAsync();
-        Log.Information("✅ Datos demo eliminados. La base de datos está lista para socios reales.");
+        Log.Information("âœ… Datos demo eliminados. La base de datos estÃ¡ lista para socios reales.");
     }
 
     await DataSeeder.SeedAsync(db);
+
+    var normalizedSocios = await SocioTextNormalization.NormalizeAsync(db);
+    if (normalizedSocios > 0)
+    {
+        Log.Information("Se normalizaron {TotalSocios} socios con texto corrupto por codificacion.", normalizedSocios);
+    }
 }
 
-// ── Archivos estáticos (logos subidos) ───────────────────────
+// â”€â”€ Archivos estÃ¡ticos (logos subidos) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 var logosPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "logos");
 Directory.CreateDirectory(logosPath);
 app.UseStaticFiles(new StaticFileOptions
@@ -233,7 +249,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/logos"
 });
 
-// ── Middleware Pipeline ──────────────────────────────────────
+// â”€â”€ Middleware Pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.UseMiddleware<ApiExceptionMiddleware>();
 app.UseSerilogRequestLogging();
 
@@ -247,5 +263,5 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-Log.Information("🚀 Directorio Interactivo CASATIC 2026 iniciado");
+Log.Information("ðŸš€ Directorio Interactivo CASATIC 2026 iniciado");
 app.Run();

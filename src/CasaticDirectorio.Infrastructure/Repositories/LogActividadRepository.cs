@@ -51,10 +51,10 @@ public class LogActividadRepository : ILogActividadRepository
             .Where(u => userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.Email);
 
-        return logins.ToDictionary(
-            l => l.UsuarioId.HasValue && users.ContainsKey(l.UsuarioId.Value)
+        return logins
+            .GroupBy(l => l.UsuarioId.HasValue && users.ContainsKey(l.UsuarioId.Value)
                 ? users[l.UsuarioId.Value]
-                : "Anónimo",
-            l => l.Count);
+                : "Anónimo")
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Count));
     }
 }
