@@ -18,14 +18,14 @@ public class LogActividadRepository : ILogActividadRepository
     }
 
     public async Task<List<LogActividad>> GetByTipoAsync(
-        TipoEvento tipo, DateTime desde, DateTime hasta) =>
+        TipoEventoLogActividad tipo, DateTime desde, DateTime hasta) =>
         await _db.LogsActividad
             .Where(l => l.TipoEvento == tipo && l.Fecha >= desde && l.Fecha <= hasta)
             .OrderByDescending(l => l.Fecha)
             .ToListAsync();
 
     public async Task<int> CountByTipoAsync(
-        TipoEvento tipo, DateTime desde, DateTime hasta) =>
+        TipoEventoLogActividad tipo, DateTime desde, DateTime hasta) =>
         await _db.LogsActividad
             .CountAsync(l => l.TipoEvento == tipo && l.Fecha >= desde && l.Fecha <= hasta);
 
@@ -40,7 +40,7 @@ public class LogActividadRepository : ILogActividadRepository
         DateTime desde, DateTime hasta)
     {
         var logins = await _db.LogsActividad
-            .Where(l => l.TipoEvento == TipoEvento.Login && l.Fecha >= desde && l.Fecha <= hasta)
+            .Where(l => l.TipoEvento == TipoEventoLogActividad.Login && l.Fecha >= desde && l.Fecha <= hasta)
             .GroupBy(l => l.UsuarioId)
             .Select(g => new { UsuarioId = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -57,4 +57,27 @@ public class LogActividadRepository : ILogActividadRepository
                 : "Anónimo")
             .ToDictionary(g => g.Key, g => g.Sum(x => x.Count));
     }
+
+    public async Task<List<LogActividad>> GetAccesosByUsuarioAsync(Guid usuarioId, int top) =>
+        await _db.LogsActividad
+            .Where(l => l.UsuarioId == usuarioId && l.TipoEvento == TipoEventoLogActividad.Login)
+            .OrderByDescending(l => l.Fecha)
+            .Take(top)
+            .ToListAsync();
+
+    public async Task<List<LogActividad>> GetTodosAccesosAsync(DateTime desde, DateTime hasta, int skip, int take) =>
+        await _db.LogsActividad
+            .Where(l => (l.TipoEvento == TipoEventoLogActividad.Login ||
+                         l.TipoEvento == TipoEventoLogActividad.LoginFallido) &&
+                         l.Fecha >= desde && l.Fecha <= hasta)
+            .OrderByDescending(l => l.Fecha)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+
+    public async Task<int> CountTodosAccesosAsync(DateTime desde, DateTime hasta) =>
+        await _db.LogsActividad
+            .CountAsync(l => (l.TipoEvento == TipoEventoLogActividad.Login ||
+                              l.TipoEvento == TipoEventoLogActividad.LoginFallido) &&
+                              l.Fecha >= desde && l.Fecha <= hasta);
 }

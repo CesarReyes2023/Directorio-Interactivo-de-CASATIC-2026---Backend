@@ -10,6 +10,8 @@ public class SocioListDto
     public string Slug { get; set; } = string.Empty;
     public string Descripcion { get; set; } = string.Empty;
     public List<string> Especialidades { get; set; } = new();
+    public List<string> Servicios { get; set; } = new();
     public string LogoUrl { get; set; } = string.Empty;
     public string Telefono { get; set; } = string.Empty;
+    public string Direccion { get; set; } = string.Empty;
 }

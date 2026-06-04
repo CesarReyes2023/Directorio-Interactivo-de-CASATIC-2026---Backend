@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiar solución y proyectos
+# Copiar solución y proyectos primero (caché de restore).
 COPY CasaticDirectorio.sln .
 COPY src/CasaticDirectorio.Domain/CasaticDirectorio.Domain.csproj src/CasaticDirectorio.Domain/
 COPY src/CasaticDirectorio.Infrastructure/CasaticDirectorio.Infrastructure.csproj src/CasaticDirectorio.Infrastructure/
@@ -10,6 +10,7 @@ COPY src/CasaticDirectorio.Api/CasaticDirectorio.Api.csproj src/CasaticDirectori
 
 RUN dotnet restore
 
+# Copiar el resto del código y publicar.
 COPY src/ src/
 WORKDIR /src/src/CasaticDirectorio.Api
 RUN dotnet publish -c Release -o /app/publish
@@ -17,11 +18,29 @@ RUN dotnet publish -c Release -o /app/publish
 # ── Runtime Stage ─────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/publish .
 
-ENV ASPNETCORE_URLS=http://+:5000
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+# curl para el healthcheck + crear usuario no-root para reducir superficie.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd --system --gid 1001 casatic \
+ && useradd  --system --uid 1001 --gid casatic --shell /bin/false casatic
+
+COPY --from=build --chown=casatic:casatic /app/publish .
+
+# Asegurar que los directorios de imagenes existen y son escribibles por el usuario.
+RUN mkdir -p /app/wwwroot/logos /app/wwwroot/uploads && chown -R casatic:casatic /app/wwwroot
+
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    DOTNET_NOLOGO=true
+
+USER casatic
 EXPOSE 5000
-ENTRYPOINT ["dotnet", "CasaticDirectorio.Api.dll"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
+  CMD curl -fsS http://localhost:5000/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-5000} dotnet CasaticDirectorio.Api.dll"]

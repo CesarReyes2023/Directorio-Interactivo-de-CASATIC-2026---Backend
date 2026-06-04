@@ -8,11 +8,16 @@ namespace CasaticDirectorio.Domain.Entities;
 public class LogActividad
 {
     public Guid Id { get; set; }
-    public TipoEvento TipoEvento { get; set; }
+
+    /// <summary>
+    /// Tipo de evento del log (Login, Busqueda, etc.).
+    /// </summary>
+    public TipoEventoLogActividad TipoEvento { get; set; }
+
     public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Texto de búsqueda (solo para eventos de tipo Busqueda).
+    /// Texto libre asociado al evento (búsqueda, descripción de operación, etc.).
     /// </summary>
     public string? Query { get; set; }
 

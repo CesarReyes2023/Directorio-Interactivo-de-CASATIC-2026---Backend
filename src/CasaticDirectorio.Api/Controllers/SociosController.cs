@@ -1,4 +1,4 @@
-using AutoMapper;
+using CasaticDirectorio.Api.Mapping;
 using CasaticDirectorio.Api.DTOs.Socios;
 using CasaticDirectorio.Api.Services;
 using CasaticDirectorio.Domain.Entities;
@@ -20,13 +20,11 @@ namespace CasaticDirectorio.Api.Controllers;
 public class SociosController : ControllerBase
 {
     private readonly ISocioRepository _socios;
-    private readonly IMapper _mapper;
     private readonly ILogService _logService;
 
-    public SociosController(ISocioRepository socios, IMapper mapper, ILogService logService)
+    public SociosController(ISocioRepository socios, ILogService logService)
     {
         _socios = socios;
-        _mapper = mapper;
         _logService = logService;
     }
 
@@ -37,7 +35,7 @@ public class SociosController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var socios = await _socios.GetAllAsync();
-        return Ok(_mapper.Map<List<SocioDto>>(socios));
+        return Ok(socios.Select(s => s.ToDto()).ToList());
     }
 
     /// <summary>
@@ -48,7 +46,7 @@ public class SociosController : ControllerBase
     {
         var socio = await _socios.GetByIdAsync(id);
         if (socio == null) return NotFound();
-        return Ok(_mapper.Map<SocioDto>(socio));
+        return Ok(socio.ToDto());
     }
 
     /// <summary>
@@ -71,7 +69,7 @@ public class SociosController : ControllerBase
             dto.MarcasRepresenta.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).Length > 50)
             return BadRequest(new { message = "Las marcas que representa no pueden exceder 50 palabras" });
 
-        var socio = _mapper.Map<Socio>(dto);
+        var socio = dto.ToEntity();
         socio.Id = Guid.NewGuid();
 
         // Auto-generar slug si viene vacío
@@ -85,9 +83,9 @@ public class SociosController : ControllerBase
 
         await _socios.AddAsync(socio);
 
-        await _logService.RegistrarAsync(TipoEvento.CrudSocio, query: $"Crear: {socio.NombreEmpresa}");
+        await _logService.RegistrarAsync(TipoEventoLogActividad.CrudSocio, query: $"Crear: {socio.NombreEmpresa}");
 
-        return CreatedAtAction(nameof(GetById), new { id = socio.Id }, _mapper.Map<SocioDto>(socio));
+        return CreatedAtAction(nameof(GetById), new { id = socio.Id }, socio.ToDto());
     }
 
     /// <summary>
@@ -105,7 +103,12 @@ public class SociosController : ControllerBase
         if (dto.Descripcion != null) socio.Descripcion = dto.Descripcion;
         if (dto.Especialidades != null) socio.Especialidades = dto.Especialidades;
         if (dto.Servicios != null) socio.Servicios = dto.Servicios;
-        if (dto.RedesSociales != null) socio.RedesSociales = dto.RedesSociales;
+        if (dto.RsWebsite != null) socio.RsWebsite = dto.RsWebsite;
+        if (dto.RsFacebook != null) socio.RsFacebook = dto.RsFacebook;
+        if (dto.RsLinkedin != null) socio.RsLinkedin = dto.RsLinkedin;
+        if (dto.RsTwitter != null) socio.RsTwitter = dto.RsTwitter;
+        if (dto.RsInstagram != null) socio.RsInstagram = dto.RsInstagram;
+        if (dto.RsYoutube != null) socio.RsYoutube = dto.RsYoutube;
         if (dto.Telefono != null) socio.Telefono = dto.Telefono;
         if (dto.Direccion != null) socio.Direccion = dto.Direccion;
         if (dto.LogoUrl != null) socio.LogoUrl = dto.LogoUrl;
@@ -118,9 +121,9 @@ public class SociosController : ControllerBase
 
         await _socios.UpdateAsync(socio);
 
-        await _logService.RegistrarAsync(TipoEvento.CrudSocio, query: $"Editar: {socio.NombreEmpresa}");
+        await _logService.RegistrarAsync(TipoEventoLogActividad.CrudSocio, query: $"Editar: {socio.NombreEmpresa}");
 
-        return Ok(_mapper.Map<SocioDto>(socio));
+        return Ok(socio.ToDto());
     }
 
     /// <summary>
@@ -133,7 +136,7 @@ public class SociosController : ControllerBase
         if (socio == null) return NotFound();
 
         await _socios.DeleteAsync(id);
-        await _logService.RegistrarAsync(TipoEvento.CrudSocio, query: $"Eliminar: {socio.NombreEmpresa}");
+        await _logService.RegistrarAsync(TipoEventoLogActividad.CrudSocio, query: $"Eliminar: {socio.NombreEmpresa}");
 
         return NoContent();
     }

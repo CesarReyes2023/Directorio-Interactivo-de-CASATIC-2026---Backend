@@ -1,8 +1,7 @@
-﻿using System.Text;
+using System.Text;
 using System.Threading.RateLimiting;
-using CasaticDirectorio.Api.Mapping;
+using CasaticDirectorio.Api.Middleware;
 using CasaticDirectorio.Api.Services;
-using CasaticDirectorio.Domain.Enums;
 using CasaticDirectorio.Domain.Interfaces;
 using CasaticDirectorio.Infrastructure.Data;
 using CasaticDirectorio.Infrastructure.Data.Seed;
@@ -13,76 +12,99 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using CasaticDirectorio.Api.Middleware;
-
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// Program.cs â€” Directorio Interactivo CASATIC 2026
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-// Permitir DateTime sin Kind explÃ­cito en consultas EF Core / Npgsql.
-// ASP.NET model binding parsea query params como Kind=Unspecified;
-// esta opciÃ³n evita el error Â« Cannot write DateTime with Kind=Unspecified Â».
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// â”€â”€ Serilog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Serilog ───────────────────────────────────────────────
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-// â”€â”€ PostgreSQL + EF Core â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// ── Validación FAIL-FAST de configuración crítica ─────────
+// Sin esto, una app con JWT_KEY vacío arrancaba pero todos los tokens
+// eran inválidos / o crasheaba con NRE en el primer login.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString) ||
+    connectionString.Contains("REEMPLAZ", StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:DefaultConnection no está configurada. Definí la variable de entorno CONNECTION_STRING (ver .env.example).");
+}
 
-// â”€â”€ Repositorios (DI) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) ||
+    jwtKey.Contains("REEMPLAZ", StringComparison.OrdinalIgnoreCase) ||
+    jwtKey.Length < 32)
+{
+    throw new InvalidOperationException(
+        "Jwt:Key no está configurada o es demasiado corta (mínimo 32 caracteres). " +
+        "Generá una clave con 'openssl rand -base64 64' y definí JWT_KEY en .env.");
+}
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException("Jwt:Issuer no configurado.");
+var jwtAudience = builder.Configuration["Jwt:Audience"]
+    ?? throw new InvalidOperationException("Jwt:Audience no configurado.");
+
+// ── PostgreSQL + EF Core ──────────────────────────────────
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// ── Repositorios ──────────────────────────────────────────
 builder.Services.AddScoped<ISocioRepository, SocioRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<ILogActividadRepository, LogActividadRepository>();
 builder.Services.AddScoped<IFormularioContactoRepository, FormularioContactoRepository>();
 
-// â”€â”€ Servicios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Servicios ─────────────────────────────────────────────
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<ILogService, LogService>();
+builder.Services.AddScoped<EventoService>();
 
-// â”€â”€ AutoMapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+// ── Email SMTP ─────────────────────────────────────────────
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<IEmailService, SmtpEmailService>();
 
-// â”€â”€ JWT Authentication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── JWT Authentication ────────────────────────────────────
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // En Development permitimos HTTP, en producción requerimos HTTPS.
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.SaveToken = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.FromMinutes(1), // antes: 5 min por defecto (riesgo de tokens "vivos" después de expirar)
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
     });
+
 builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
 
-// â”€â”€ Forzar UTF-8 en toda la salida â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── UTF-8 ────────────────────────────────────────────────
 Console.OutputEncoding = Encoding.UTF8;
 
-// â”€â”€ Controllers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Controllers + JSON ───────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-        opts.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
-        opts.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+        opts.JsonSerializerOptions.DefaultIgnoreCondition =
+            System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
-// â”€â”€ Swagger / OpenAPI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Swagger (sólo en Development) ────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -92,176 +114,180 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = "API para el directorio de socios de CASATIC"
     });
+
+    // Bearer JWT (esquema HTTP Bearer correcto, no ApiKey)
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
         BearerFormat = "JWT",
-        Description = "Ingrese 'Bearer {token}'"
+        Description = "Ingrese su token JWT (sin el prefijo 'Bearer ')."
     });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
     });
 });
 
-// â”€â”€ CORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CORS desde configuración ─────────────────────────────
+// Antes la lista estaba hardcodeada en el código y mezclaba dev+prod.
+// Ahora viene de Cors:AllowedOrigins (env var CORS_ALLOWED_ORIGINS, separados por coma).
+var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173", "http://localhost:5174",
-                "http://localhost:5175", "http://localhost:3000",
-                "http://localhost:80")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        if (allowedOrigins.Length == 0)
+        {
+            // Sin orígenes configurados → bloqueamos todo en lugar de permitir cualquiera.
+            policy.WithOrigins(Array.Empty<string>());
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                  .WithHeaders("Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With")
+                  .AllowCredentials();
+        }
     });
 });
 
-// â”€â”€ Rate Limiting (protecciÃ³n contra abuso) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Rate Limiting ───────────────────────────────────────
 builder.Services.AddRateLimiter(rl =>
 {
-    // Formularios de contacto: mÃ¡x 5 por IP por minuto
-    rl.AddFixedWindowLimiter("contacto", options =>
-    {
-        options.Window = TimeSpan.FromMinutes(1);
-        options.PermitLimit = 5;
-        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        options.QueueLimit = 0;
-    });
+    // Endpoints de auth (login, recuperación) — más estricto y por IP
+    rl.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 10,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
 
-    // Login: mÃ¡x 10 intentos por IP por minuto (anti-brute-force)
-    rl.AddFixedWindowLimiter("auth", options =>
-    {
-        options.Window = TimeSpan.FromMinutes(1);
-        options.PermitLimit = 10;
-        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        options.QueueLimit = 0;
-    });
+    // Formulario de contacto público — 5/min por IP
+    rl.AddPolicy("contacto", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 5,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
 
     rl.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
+// ── Tamaño máximo de request global (defensa básica DoS) ─
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB (importación Excel)
+});
+
 var app = builder.Build();
 
-// â”€â”€ Migraciones automÃ¡ticas + Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// En desarrollo: EnsureCreated crea las tablas si no existen.
-// En producciÃ³n: usar MigrateAsync con migraciones generadas.
+// ── Migraciones + Seed ──────────────────────────────────
+// Permite deshabilitar el seeder en desarrollo con SKIP_SEED=true
+var skipSeed = bool.TryParse(builder.Configuration["SKIP_SEED"], out var val) && val;
+
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
-
-    if (env.IsDevelopment())
+    try
     {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seedLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("DataSeeder");
+        // No usamos MigrateAsync porque el proyecto no tiene migraciones EF generadas.
+        // EnsureCreatedAsync crea el schema desde el modelo si la BD está vacía,
+        // y es no-op si ya existe (ej: cuando se restauró backup.sql primero).
         await db.Database.EnsureCreatedAsync();
+        
+        if (!skipSeed)
+        {
+            await DataSeeder.SeedAsync(db, app.Configuration, seedLogger);
+        }
+        else
+        {
+            Log.Information("⏭️  Seeder deshabilitado con SKIP_SEED=true. Usando BD existente sin modificar datos.");
+        }
     }
-    else
+    catch (Exception ex)
     {
-        await db.Database.MigrateAsync();
-    }
-
-    // Compatibilidad de esquema para entornos existentes sin migraciones.
-    // EnsureCreated no aplica cambios sobre tablas ya creadas.
-    await db.Database.ExecuteSqlRawAsync(@"
-        ALTER TABLE IF EXISTS socios
-        ADD COLUMN IF NOT EXISTS ""MarcasRepresenta"" text NOT NULL DEFAULT '';
-    ");
-
-    await db.Database.ExecuteSqlRawAsync(@"
-        ALTER TABLE IF EXISTS formularios_contacto
-        ADD COLUMN IF NOT EXISTS ""Leido"" boolean NOT NULL DEFAULT false;
-    ");
-
-    await db.Database.ExecuteSqlRawAsync(@"
-        ALTER TABLE IF EXISTS socios
-        ADD COLUMN IF NOT EXISTS ""EmailContacto"" text NOT NULL DEFAULT '';
-    ");
-
-    await db.Database.ExecuteSqlRawAsync(@"
-        ALTER TABLE IF EXISTS socios
-        ADD COLUMN IF NOT EXISTS ""MapaUrl"" text NOT NULL DEFAULT '';
-    ");
-
-    // â”€â”€ Limpieza de datos demo (se ejecuta una sola vez) â”€â”€â”€â”€â”€
-    // Detecta los slugs de ejemplo del seeder anterior y los borra.
-    // Una vez eliminados, este bloque queda inactivo para siempre.
-    var slugsDemo = new[]
-    {
-        "applaudo-studios-el-salvador",
-        "elaniin-el-salvador",
-        "tigo-el-salvador",
-        "claro-el-salvador",
-        "gbm-el-salvador"
-    };
-
-    if (await db.Socios.AnyAsync(s => slugsDemo.Contains(s.Slug)))
-    {
-        // Borrar logs y formularios de demo
-        db.LogsActividad.RemoveRange(db.LogsActividad);
-        db.FormulariosContacto.RemoveRange(db.FormulariosContacto);
-        await db.SaveChangesAsync();
-
-        // Borrar usuarios no administradores
-        var usuariosDemo = await db.Usuarios
-            .Where(u => u.Rol != Rol.Admin)
-            .ToListAsync();
-        db.Usuarios.RemoveRange(usuariosDemo);
-
-        // Borrar socios demo (cascade elimina sus formularios)
-        var sociosDemo = await db.Socios
-            .Where(s => slugsDemo.Contains(s.Slug))
-            .ToListAsync();
-        db.Socios.RemoveRange(sociosDemo);
-
-        await db.SaveChangesAsync();
-        Log.Information("âœ… Datos demo eliminados. La base de datos estÃ¡ lista para socios reales.");
-    }
-
-    await DataSeeder.SeedAsync(db);
-
-    var normalizedSocios = await SocioTextNormalization.NormalizeAsync(db);
-    if (normalizedSocios > 0)
-    {
-        Log.Information("Se normalizaron {TotalSocios} socios con texto corrupto por codificacion.", normalizedSocios);
+        Log.Fatal(ex, "Error en migración/seed inicial. La aplicación no puede arrancar.");
+        throw;
     }
 }
 
-// â”€â”€ Archivos estÃ¡ticos (logos subidos) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── HTTPS redirection (sólo si no estamos detrás de proxy en dev local) ─
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+    app.UseHsts();
+}
+
+// ── Security headers (CSP, X-Frame, X-Content-Type, Referrer) ─
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+// ── Static files para logos ─────────────────────────────
 var logosPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "logos");
 Directory.CreateDirectory(logosPath);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(logosPath),
-    RequestPath = "/logos"
+    RequestPath = "/logos",
+    OnPrepareResponse = ctx =>
+    {
+        // Cache agresivo en logos: el nombre incluye Guid, así que son inmutables.
+        ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    }
 });
 
-// â”€â”€ Middleware Pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Static files para uploads de eventos y formularios ─────
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads",
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    }
+});
+
+// ── Pipeline ──────────────────────────────────────────
 app.UseMiddleware<ApiExceptionMiddleware>();
 app.UseSerilogRequestLogging();
 
-app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CASATIC API v1"));
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CASATIC API v1"));
+}
 
 app.UseCors("AllowFrontend");
 app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-Log.Information("ðŸš€ Directorio Interactivo CASATIC 2026 iniciado");
+Log.Information("🚀 Directorio Interactivo CASATIC 2026 iniciado en entorno {Env}", app.Environment.EnvironmentName);
 app.Run();

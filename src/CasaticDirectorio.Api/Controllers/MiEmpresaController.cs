@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using AutoMapper;
+using CasaticDirectorio.Api.Mapping;
 using CasaticDirectorio.Api.DTOs.Socios;
 using CasaticDirectorio.Api.Services;
 using CasaticDirectorio.Domain.Enums;
@@ -20,18 +20,15 @@ public class MiEmpresaController : ControllerBase
 {
     private readonly ISocioRepository _socios;
     private readonly IUsuarioRepository _usuarios;
-    private readonly IMapper _mapper;
     private readonly ILogService _logService;
 
     public MiEmpresaController(
         ISocioRepository socios,
         IUsuarioRepository usuarios,
-        IMapper mapper,
         ILogService logService)
     {
         _socios = socios;
         _usuarios = usuarios;
-        _mapper = mapper;
         _logService = logService;
     }
 
@@ -51,7 +48,7 @@ public class MiEmpresaController : ControllerBase
         var socio = await _socios.GetByIdAsync(usuario.SocioId.Value);
         if (socio == null) return NotFound();
 
-        return Ok(_mapper.Map<SocioDto>(socio));
+        return Ok(socio.ToDto());
     }
 
     /// <summary>
@@ -77,7 +74,12 @@ public class MiEmpresaController : ControllerBase
         if (dto.Descripcion != null) socio.Descripcion = dto.Descripcion;
         if (dto.Especialidades != null) socio.Especialidades = dto.Especialidades;
         if (dto.Servicios != null) socio.Servicios = dto.Servicios;
-        if (dto.RedesSociales != null) socio.RedesSociales = dto.RedesSociales;
+        if (dto.RsWebsite != null) socio.RsWebsite = dto.RsWebsite;
+        if (dto.RsFacebook != null) socio.RsFacebook = dto.RsFacebook;
+        if (dto.RsLinkedin != null) socio.RsLinkedin = dto.RsLinkedin;
+        if (dto.RsTwitter != null) socio.RsTwitter = dto.RsTwitter;
+        if (dto.RsInstagram != null) socio.RsInstagram = dto.RsInstagram;
+        if (dto.RsYoutube != null) socio.RsYoutube = dto.RsYoutube;
         if (dto.Telefono != null) socio.Telefono = dto.Telefono;
         if (dto.Direccion != null) socio.Direccion = dto.Direccion;
         if (dto.LogoUrl != null) socio.LogoUrl = dto.LogoUrl;
@@ -86,10 +88,10 @@ public class MiEmpresaController : ControllerBase
         await _socios.UpdateAsync(socio);
 
         await _logService.RegistrarAsync(
-            TipoEvento.CrudSocio,
+            TipoEventoLogActividad.CrudSocio,
             query: $"Socio editó su empresa: {socio.NombreEmpresa}",
             usuarioId: usuario.Id);
 
-        return Ok(_mapper.Map<SocioDto>(socio));
+        return Ok(socio.ToDto());
     }
 }

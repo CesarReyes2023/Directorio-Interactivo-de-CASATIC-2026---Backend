@@ -7,7 +7,12 @@ public class SocioUpdateDto
     public string? Descripcion { get; set; }
     public List<string>? Especialidades { get; set; }
     public List<string>? Servicios { get; set; }
-    public string? RedesSociales { get; set; }
+    public string? RsWebsite { get; set; }
+    public string? RsFacebook { get; set; }
+    public string? RsLinkedin { get; set; }
+    public string? RsTwitter { get; set; }
+    public string? RsInstagram { get; set; }
+    public string? RsYoutube { get; set; }
     public string? Telefono { get; set; }
     public string? Direccion { get; set; }
     public string? LogoUrl { get; set; }

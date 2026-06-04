@@ -22,6 +22,16 @@ public class Usuario
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// Token para recuperación de contraseña olvidada.
+    /// </summary>
+    public string? TokenRecuperacion { get; set; }
+
+    /// <summary>
+    /// Fecha de expiración del token de recuperación (24 horas).
+    /// </summary>
+    public DateTime? FechaExpiracionToken { get; set; }
+
+    /// <summary>
     /// Relación opcional con Socio (solo para rol Usuario/Socio legado).
     /// </summary>
     public Guid? SocioId { get; set; }

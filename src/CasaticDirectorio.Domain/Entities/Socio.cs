@@ -28,10 +28,14 @@ public class Socio
     public List<string> Servicios { get; set; } = new();
 
     /// <summary>
-    /// Redes sociales en formato JSON (serializado como jsonb).
-    /// Ej: {"facebook": "url", "linkedin": "url", "twitter": "url", "website": "url"}
+    /// Redes sociales - campos individuales para mejor indexación y queries.
     /// </summary>
-    public string RedesSociales { get; set; } = "{}";
+    public string RsWebsite { get; set; } = string.Empty;
+    public string RsFacebook { get; set; } = string.Empty;
+    public string RsLinkedin { get; set; } = string.Empty;
+    public string RsTwitter { get; set; } = string.Empty;
+    public string RsInstagram { get; set; } = string.Empty;
+    public string RsYoutube { get; set; } = string.Empty;
 
     public string Telefono { get; set; } = string.Empty;
     public string Direccion { get; set; } = string.Empty;
@@ -75,4 +79,6 @@ public class Socio
     // Navegación
     public List<FormularioContacto> Formularios { get; set; } = new();
     public List<LogActividad> Logs { get; set; } = new();
+    public List<Evento> Eventos { get; set; } = new();
+    public List<Factura> Facturas { get; set; } = new();
 }
