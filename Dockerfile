@@ -38,9 +38,9 @@ ENV LANG=C.UTF-8 \
     DOTNET_NOLOGO=true
 
 USER casatic
-EXPOSE 5000
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
-  CMD curl -fsS http://localhost:5000/health || exit 1
+  CMD curl -fsS http://localhost:8080/health || exit 1
 
-ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-5000} dotnet CasaticDirectorio.Api.dll"]
+CMD ["dotnet", "CasaticDirectorio.Api.dll"]
