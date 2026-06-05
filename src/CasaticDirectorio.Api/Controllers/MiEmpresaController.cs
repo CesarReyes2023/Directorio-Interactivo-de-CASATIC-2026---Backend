@@ -15,6 +15,8 @@ namespace CasaticDirectorio.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/miempresa")]
+[Route("api/mi-empresa")]
 [Authorize(Roles = "Usuario,Socio")]
 public class MiEmpresaController : ControllerBase
 {
@@ -42,10 +44,28 @@ public class MiEmpresaController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var usuario = await _usuarios.GetByIdAsync(Guid.Parse(userId));
-        if (usuario?.SocioId == null)
+        if (usuario == null)
+            return Unauthorized();
+
+        var socioId = usuario.SocioId;
+        if (socioId == null)
+        {
+            var socios = await _socios.GetAllAsync();
+            var socioPorCorreo = socios.FirstOrDefault(s =>
+                string.Equals(s.EmailContacto, usuario.Email, StringComparison.OrdinalIgnoreCase));
+
+            if (socioPorCorreo != null)
+            {
+                usuario.SocioId = socioPorCorreo.Id;
+                await _usuarios.UpdateAsync(usuario);
+                socioId = socioPorCorreo.Id;
+            }
+        }
+
+        if (socioId == null)
             return NotFound(new { message = "No tiene una empresa asociada" });
 
-        var socio = await _socios.GetByIdAsync(usuario.SocioId.Value);
+        var socio = await _socios.GetByIdAsync(socioId.Value);
         if (socio == null) return NotFound();
 
         return Ok(socio.ToDto());
@@ -64,10 +84,28 @@ public class MiEmpresaController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var usuario = await _usuarios.GetByIdAsync(Guid.Parse(userId));
-        if (usuario?.SocioId == null)
+        if (usuario == null)
+            return Unauthorized();
+
+        var socioId = usuario.SocioId;
+        if (socioId == null)
+        {
+            var socios = await _socios.GetAllAsync();
+            var socioPorCorreo = socios.FirstOrDefault(s =>
+                string.Equals(s.EmailContacto, usuario.Email, StringComparison.OrdinalIgnoreCase));
+
+            if (socioPorCorreo != null)
+            {
+                usuario.SocioId = socioPorCorreo.Id;
+                await _usuarios.UpdateAsync(usuario);
+                socioId = socioPorCorreo.Id;
+            }
+        }
+
+        if (socioId == null)
             return NotFound(new { message = "No tiene una empresa asociada" });
 
-        var socio = await _socios.GetByIdAsync(usuario.SocioId.Value);
+        var socio = await _socios.GetByIdAsync(socioId.Value);
         if (socio == null) return NotFound();
 
         // Actualizar solo campos permitidos para el socio
