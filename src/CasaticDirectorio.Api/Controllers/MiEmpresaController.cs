@@ -14,7 +14,6 @@ namespace CasaticDirectorio.Api.Controllers;
 /// Solo accesible por usuarios con rol Usuario (o Socio legado).
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
 [Route("api/miempresa")]
 [Route("api/mi-empresa")]
 [Authorize(Roles = "Usuario,Socio")]
