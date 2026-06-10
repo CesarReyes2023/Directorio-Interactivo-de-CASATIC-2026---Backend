@@ -15,7 +15,8 @@ namespace CasaticDirectorio.Api.Controllers;
 /// Solo accesible por usuarios con rol Usuario (o Socio legado).
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/miempresa")]
+[Route("api/mi-empresa")]
 [Authorize(Roles = "Usuario,Socio")]
 public class MiEmpresaController : ControllerBase
 {
@@ -79,6 +80,7 @@ public class MiEmpresaController : ControllerBase
         if (userId == null) return Unauthorized();
 
         var usuario = await _usuarios.GetByIdAsync(Guid.Parse(userId));
+
         if (usuario == null) return Unauthorized();
 
         Socio? socio;
@@ -98,6 +100,7 @@ public class MiEmpresaController : ControllerBase
 
         if (socio == null)
             return NotFound(new { message = "No tiene una empresa asociada" });
+
 
         // Actualizar solo campos permitidos para el socio
         if (dto.Descripcion != null) socio.Descripcion = dto.Descripcion;

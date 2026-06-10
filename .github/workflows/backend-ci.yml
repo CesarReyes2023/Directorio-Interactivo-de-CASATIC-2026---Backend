@@ -1,0 +1,26 @@
+name: backend-ci
+
+on:
+  push:
+    branches: [ main, desarrollo, development ]
+  pull_request:
+    branches: [ main, desarrollo, development ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore CasaticDirectorio.sln
+
+      - name: Build
+        run: dotnet build CasaticDirectorio.sln --configuration Release --no-restore

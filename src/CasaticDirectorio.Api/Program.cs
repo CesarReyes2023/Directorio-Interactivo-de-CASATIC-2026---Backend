@@ -271,6 +271,8 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 // ── Pipeline ──────────────────────────────────────────
+// CORS debe ir primero para que los headers lleguen incluso en respuestas de error
+app.UseCors("AllowFrontend");
 app.UseMiddleware<ApiExceptionMiddleware>();
 app.UseSerilogRequestLogging();
 
@@ -279,8 +281,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CASATIC API v1"));
 }
-
-app.UseCors("AllowFrontend");
 app.UseRateLimiter();
 
 app.UseAuthentication();
