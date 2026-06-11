@@ -244,25 +244,33 @@ public class FacturacionController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Upsert([FromBody] FacturaUpsertDto dto)
     {
-        var socio = await _db.Socios.FindAsync(dto.SocioId);
-        if (socio == null) return NotFound(new { message = "Socio no encontrado." });
-
-        var numero = await NextNumeroAsync();
-        var factura = new Factura
+        try
         {
-            Id = Guid.NewGuid(),
-            SocioId = dto.SocioId,
-            Numero = numero,
-            CodigoGeneracion = Guid.NewGuid().ToString().ToUpperInvariant(),
-            NumeroControl = BuildNumeroControl(numero)
-        };
-        _db.Facturas.Add(factura);
+            var socio = await _db.Socios.FindAsync(dto.SocioId);
+            if (socio == null) return NotFound(new { message = "Socio no encontrado." });
 
-        Apply(factura, dto);
-        await _db.SaveChangesAsync();
+            var numero = await NextNumeroAsync();
+            var factura = new Factura
+            {
+                Id = Guid.NewGuid(),
+                SocioId = dto.SocioId,
+                Numero = numero,
+                CodigoGeneracion = Guid.NewGuid().ToString().ToUpperInvariant(),
+                NumeroControl = BuildNumeroControl(numero)
+            };
+            _db.Facturas.Add(factura);
 
-        factura.Socio = socio;
-        return Ok(ToDto(factura));
+            Apply(factura, dto);
+            await _db.SaveChangesAsync();
+
+            factura.Socio = socio;
+            return Ok(ToDto(factura));
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? "";
+            return StatusCode(500, new { message = ex.Message, detail = inner });
+        }
     }
 
     [HttpPut("{id:guid}")]
@@ -575,9 +583,9 @@ public class FacturacionController : ControllerBase
             iva = Math.Round(subtotal * IvaRate, 2);
         }
 
-        factura.PlanNombre = dto.PlanNombre.Trim();
-        factura.PlanPeriodo = dto.PlanPeriodo.Trim();
-        factura.Descripcion = dto.Descripcion.Trim();
+        factura.PlanNombre = (dto.PlanNombre ?? "").Trim();
+        factura.PlanPeriodo = (dto.PlanPeriodo ?? "").Trim();
+        factura.Descripcion = (dto.Descripcion ?? "").Trim();
         factura.Subtotal = subtotal;
         factura.Iva = iva;
         factura.Total = subtotal + iva;
@@ -600,7 +608,7 @@ public class FacturacionController : ControllerBase
         factura.FechaEmision = EnsureUtc(dto.FechaEmision);
         factura.FechaVencimiento = EnsureUtc(dto.FechaVencimiento);
         factura.FechaPago = dto.FechaPago.HasValue ? EnsureUtc(dto.FechaPago.Value) : null;
-        factura.Notas = dto.Notas.Trim();
+        factura.Notas = (dto.Notas ?? "").Trim();
         factura.UpdatedAt = DateTime.UtcNow;
     }
 
