@@ -216,7 +216,25 @@ using (var scope = app.Services.CreateScope())
         // EnsureCreatedAsync crea el schema desde el modelo si la BD está vacía,
         // y es no-op si ya existe (ej: cuando se restauró backup.sql primero).
         await db.Database.EnsureCreatedAsync();
-        
+
+        // Fix: el índice ix_facturas_socio_id fue creado como UNIQUE por error en el SQL inicial.
+        // Un socio puede tener múltiples facturas. Lo convertimos a índice normal si es único.
+        await db.Database.ExecuteSqlRawAsync("""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM pg_indexes
+                    WHERE tablename = 'facturas'
+                      AND indexname = 'ix_facturas_socio_id'
+                      AND indexdef LIKE '%UNIQUE%'
+                ) THEN
+                    DROP INDEX IF EXISTS ix_facturas_socio_id;
+                    CREATE INDEX ix_facturas_socio_id ON facturas("SocioId");
+                END IF;
+            END
+            $$;
+            """);
+
         if (!skipSeed)
         {
             await DataSeeder.SeedAsync(db, app.Configuration, seedLogger);

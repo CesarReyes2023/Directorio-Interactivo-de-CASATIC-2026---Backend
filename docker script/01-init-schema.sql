@@ -146,6 +146,6 @@ CREATE TABLE IF NOT EXISTS facturas (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ix_facturas_numero ON facturas("Numero");
-CREATE UNIQUE INDEX IF NOT EXISTS ix_facturas_socio_id ON facturas("SocioId");
+CREATE INDEX IF NOT EXISTS ix_facturas_socio_id ON facturas("SocioId");
 CREATE INDEX IF NOT EXISTS ix_facturas_estado ON facturas("Estado");
 CREATE INDEX IF NOT EXISTS ix_facturas_fecha_vencimiento ON facturas("FechaVencimiento");

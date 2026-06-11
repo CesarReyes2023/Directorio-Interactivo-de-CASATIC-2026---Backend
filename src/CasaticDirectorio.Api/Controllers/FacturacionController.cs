@@ -520,8 +520,16 @@ public class FacturacionController : ControllerBase
     private async Task<string> NextNumeroAsync()
     {
         var year = DateTime.UtcNow.Year;
-        var count = await _db.Facturas.CountAsync(f => f.FechaEmision.Year == year);
-        return $"CAS-{year}-{count + 1:0000}";
+        var prefix = $"CAS-{year}-";
+        var maxCorrelativo = await _db.Facturas
+            .Where(f => f.Numero.StartsWith(prefix))
+            .Select(f => f.Numero.Substring(prefix.Length))
+            .ToListAsync();
+        var next = maxCorrelativo
+            .Select(s => int.TryParse(s, out var n) ? n : 0)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+        return $"{prefix}{next:0000}";
     }
 
     private static void Apply(Factura factura, FacturaUpsertDto dto)
