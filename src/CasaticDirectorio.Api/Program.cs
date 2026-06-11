@@ -217,6 +217,21 @@ using (var scope = app.Services.CreateScope())
         // y es no-op si ya existe (ej: cuando se restauró backup.sql primero).
         await db.Database.EnsureCreatedAsync();
 
+        // Fix: columnas añadidas al modelo Factura después del schema inicial.
+        // ALTER TABLE ... ADD COLUMN IF NOT EXISTS es idempotente; no falla si ya existen.
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE facturas
+                ADD COLUMN IF NOT EXISTS "TipoDocumento"      VARCHAR(60)  NOT NULL DEFAULT 'Factura interna',
+                ADD COLUMN IF NOT EXISTS "CodigoGeneracion"   VARCHAR(40)  NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS "NumeroControl"      VARCHAR(60)  NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS "SelloRecepcion"     VARCHAR(120) NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS "Ambiente"           VARCHAR(30)  NOT NULL DEFAULT 'Produccion',
+                ADD COLUMN IF NOT EXISTS "CondicionOperacion" VARCHAR(30)  NOT NULL DEFAULT 'Credito',
+                ADD COLUMN IF NOT EXISTS "FormaPago"          VARCHAR(60)  NOT NULL DEFAULT 'Transferencia',
+                ADD COLUMN IF NOT EXISTS "ReferenciaPago"     VARCHAR(120) NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS "DteJson"            JSONB        DEFAULT NULL;
+            """);
+
         // Fix: el índice ix_facturas_socio_id fue creado como UNIQUE por error en el SQL inicial.
         // Un socio puede tener múltiples facturas. Lo convertimos a índice normal si es único.
         await db.Database.ExecuteSqlRawAsync("""
