@@ -102,9 +102,7 @@ public class EventoService
     {
         return await _db.Eventos
             .AsNoTracking()
-            .Where(e =>
-                e.Habilitado &&
-                e.Estado == EstadoEvento.Aprobado)
+            .Where(e => e.Estado == EstadoEvento.Aprobado)
             .OrderBy(e => e.FechaInicio)
             .Select(e => new EventoResponseDto
             {
