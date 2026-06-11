@@ -176,6 +176,11 @@ public static class DataSeeder
             """);
 
         await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE formularios_contacto ADD COLUMN IF NOT EXISTS "Asunto" text NOT NULL DEFAULT '';
+            ALTER TABLE formularios_contacto ALTER COLUMN "SocioId" DROP NOT NULL;
+            """);
+
+        await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE facturas ADD COLUMN IF NOT EXISTS "TipoDocumento" VARCHAR(60) NOT NULL DEFAULT 'Factura interna';
             ALTER TABLE facturas ADD COLUMN IF NOT EXISTS "CodigoGeneracion" VARCHAR(40) NOT NULL DEFAULT '';
             ALTER TABLE facturas ADD COLUMN IF NOT EXISTS "NumeroControl" VARCHAR(60) NOT NULL DEFAULT '';

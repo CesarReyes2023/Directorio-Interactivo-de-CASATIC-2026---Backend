@@ -33,6 +33,12 @@ public class FormularioContactoRepository : IFormularioContactoRepository
             .OrderByDescending(f => f.Fecha)
             .ToListAsync();
 
+    public async Task<List<FormularioContacto>> GetGeneralAsync(DateTime desde, DateTime hasta) =>
+        await _db.FormulariosContacto
+            .Where(f => f.SocioId == null && f.Fecha >= desde && f.Fecha <= hasta)
+            .OrderByDescending(f => f.Fecha)
+            .ToListAsync();
+
     public async Task MarcarLeidoAsync(Guid id, bool leido)
     {
         var formulario = await _db.FormulariosContacto.FindAsync(id);

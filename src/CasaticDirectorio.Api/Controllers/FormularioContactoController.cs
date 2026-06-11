@@ -42,6 +42,7 @@ public class FormularioContactoController : ControllerBase
             SocioId = socioId,
             Nombre = dto.Nombre,
             Correo = dto.Correo,
+            Asunto = dto.Asunto?.Trim() ?? string.Empty,
             Mensaje = dto.Mensaje,
             Fecha = DateTime.UtcNow
         };
@@ -84,28 +85,59 @@ public class FormularioContactoController : ControllerBase
     /// Enviar formulario de contacto general desde /contacto.
     /// POST /api/formulariocontacto/general
     /// </summary>
+    /// <summary>
+    /// Enviar mensaje de contacto general a CASATIC desde /contacto.
+    /// Se guarda con SocioId = null y solo el admin lo puede ver.
+    /// POST /api/formulariocontacto/general
+    /// </summary>
     [HttpPost("general")]
     [EnableRateLimiting("contacto")]
     public async Task<IActionResult> EnviarGeneral([FromBody] FormularioContactoDto dto)
     {
-        var socioReceptor = (await _socios.GetAllAsync())
-            .FirstOrDefault(s => s.Habilitado);
-
-        if (socioReceptor == null)
-            return BadRequest(new { message = "No hay un socio habilitado para recibir mensajes generales" });
-
-        var asunto = string.IsNullOrWhiteSpace(dto.Asunto)
-            ? "Sin asunto"
-            : dto.Asunto.Trim();
-
-        var dtoGeneral = new FormularioContactoDto
+        var formulario = new FormularioContacto
         {
+            Id = Guid.NewGuid(),
+            SocioId = null,
             Nombre = dto.Nombre,
             Correo = dto.Correo,
-            Mensaje = $"[Contacto general]\nAsunto: {asunto}\n\n{dto.Mensaje}"
+            Asunto = dto.Asunto?.Trim() ?? "Sin asunto",
+            Mensaje = dto.Mensaje,
+            Fecha = DateTime.UtcNow
         };
 
-        return await EnviarFormularioAsync(socioReceptor.Id, dtoGeneral);
+        await _formularios.AddAsync(formulario);
+
+        await _logService.RegistrarAsync(
+            TipoEventoLogActividad.EnvioFormulario,
+            ip: HttpContext.Connection.RemoteIpAddress?.ToString(),
+            userAgent: Request.Headers.UserAgent.ToString());
+
+        return Ok(new { message = "Mensaje enviado correctamente", id = formulario.Id });
+    }
+
+    /// <summary>
+    /// Listar mensajes de contacto general recibidos por CASATIC (admin).
+    /// GET /api/formulariocontacto/general?desde=...&hasta=...
+    /// </summary>
+    [Authorize(Roles = "Admin")]
+    [HttpGet("general")]
+    public async Task<IActionResult> GetGeneral([FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
+    {
+        var ahora = DateTime.UtcNow;
+        var formularios = await _formularios.GetGeneralAsync(
+            EnsureUtc(desde ?? ahora.AddMonths(-1)),
+            EnsureUtc(hasta ?? ahora.AddDays(1)));
+
+        return Ok(formularios.Select(f => new
+        {
+            f.Id,
+            f.Nombre,
+            f.Correo,
+            f.Asunto,
+            f.Mensaje,
+            f.Fecha,
+            f.Leido
+        }));
     }
 
     /// <summary>

@@ -97,6 +97,7 @@ public class AuthController : ControllerBase
 
         return Ok(new LoginResponse
         {
+            Id = usuario.Id,
             Token = token,
             Email = usuario.Email,
             Rol = usuario.Rol.ToString(),
@@ -138,6 +139,7 @@ public class AuthController : ControllerBase
 
         return Ok(new LoginResponse
         {
+            Id = usuario.Id,
             Token = token,
             Email = usuario.Email,
             Rol = usuario.Rol.ToString(),

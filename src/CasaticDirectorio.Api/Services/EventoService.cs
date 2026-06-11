@@ -96,18 +96,15 @@ public class EventoService
     }
 
     /// <summary>
-    /// Lista próximos eventos publicados (visibles al público).
+    /// Lista eventos publicados visibles al público (aprobados y habilitados).
     /// </summary>
     public async Task<List<EventoResponseDto>> GetProximosEventosAsync()
     {
-        var now = DateTime.UtcNow;
-
         return await _db.Eventos
             .AsNoTracking()
             .Where(e =>
                 e.Habilitado &&
-                e.Estado == EstadoEvento.Aprobado &&
-                e.FechaInicio >= now)
+                e.Estado == EstadoEvento.Aprobado)
             .OrderBy(e => e.FechaInicio)
             .Select(e => new EventoResponseDto
             {

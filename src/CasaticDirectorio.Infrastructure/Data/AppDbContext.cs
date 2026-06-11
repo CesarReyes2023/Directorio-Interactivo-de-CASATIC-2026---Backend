@@ -104,10 +104,14 @@ public class AppDbContext : DbContext
             e.Property(f => f.Mensaje).HasColumnType("text").IsRequired();
             e.Property(f => f.Fecha).HasDefaultValueSql("now()");
 
+            e.Property(f => f.SocioId).IsRequired(false);
+            e.Property(f => f.Asunto).HasMaxLength(200).HasDefaultValue("");
+
             e.HasOne(f => f.Socio)
              .WithMany(s => s.Formularios)
              .HasForeignKey(f => f.SocioId)
-             .OnDelete(DeleteBehavior.Cascade);
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ── Eventos ─────────────────────────────────
