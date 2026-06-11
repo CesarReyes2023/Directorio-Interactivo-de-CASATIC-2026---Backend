@@ -57,15 +57,16 @@ CREATE INDEX IF NOT EXISTS ix_usuarios_socio_id ON usuarios("SocioId");
 -- Table: formularios_contacto (Contact Forms)
 CREATE TABLE IF NOT EXISTS formularios_contacto (
     "Id"      UUID          NOT NULL DEFAULT gen_random_uuid(),
-    "SocioId" UUID          NOT NULL,
+    "SocioId" UUID          DEFAULT NULL,
     "Nombre"  VARCHAR(200)  NOT NULL,
     "Correo"  VARCHAR(256)  NOT NULL,
+    "Asunto"  VARCHAR(300)  NOT NULL DEFAULT '',
     "Mensaje" TEXT          NOT NULL,
     "Fecha"   TIMESTAMPTZ   NOT NULL DEFAULT now(),
     "Leido"   BOOLEAN       NOT NULL DEFAULT FALSE,
     CONSTRAINT pk_formularios_contacto PRIMARY KEY ("Id"),
     CONSTRAINT fk_formularios_socios FOREIGN KEY ("SocioId")
-        REFERENCES socios("Id") ON DELETE CASCADE
+        REFERENCES socios("Id") ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS ix_formularios_contacto_socio_id ON formularios_contacto("SocioId");

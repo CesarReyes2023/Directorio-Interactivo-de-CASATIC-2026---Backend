@@ -232,6 +232,28 @@ using (var scope = app.Services.CreateScope())
                 ADD COLUMN IF NOT EXISTS "DteJson"            JSONB        DEFAULT NULL;
             """);
 
+        // Fix: columna Asunto añadida al modelo FormularioContacto después del schema inicial.
+        // SocioId debe ser nullable para soportar formularios generales (contacto a CASATIC sin socio).
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE formularios_contacto
+                ADD COLUMN IF NOT EXISTS "Asunto" VARCHAR(300) NOT NULL DEFAULT '';
+            """);
+
+        await db.Database.ExecuteSqlRawAsync("""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'formularios_contacto'
+                      AND column_name = 'SocioId'
+                      AND is_nullable = 'NO'
+                ) THEN
+                    ALTER TABLE formularios_contacto ALTER COLUMN "SocioId" DROP NOT NULL;
+                END IF;
+            END
+            $$;
+            """);
+
         // Fix: el índice ix_facturas_socio_id fue creado como UNIQUE por error en el SQL inicial.
         // Un socio puede tener múltiples facturas. Lo convertimos a índice normal si es único.
         await db.Database.ExecuteSqlRawAsync("""
